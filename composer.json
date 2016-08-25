@@ -1,0 +1,31 @@
+{
+  "name": "pomirleanu/eloquent-elastic",
+  "description": "Provides Elasticsearch indexing and managing functionality for Laravel Eloquent Models.",
+  "type": "project",
+  "require": {
+    "php": ">=5.6.4",
+    "laravel/framework": "5.3.*",
+    "nesbot/carbon": "1.*",
+    "elasticsearch/elasticsearch": "2.2.*",
+    "ongr/elasticsearch-dsl": "2.*",
+    "monolog/monolog": "1.*"
+  },
+  "require-dev": {
+    "mockery/mockery": "^0.9.5",
+    "phpunit/phpunit": "^5.5"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Pomirleanu Florentin Cristinel",
+      "email": "pomirleanu.florentin@gmail.com"
+    }
+  ],
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.0.x-dev"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
