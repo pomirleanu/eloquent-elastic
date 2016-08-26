@@ -1,20 +1,14 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 2:17 PM
- */
+
 namespace EloquentElastic\Console;
 
-use EloquentElastic\Manager as IndexManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Debug\Dumper;
+use EloquentElastic\IndexManager;
 
 class GetStats extends Command
 {
-
     /**
      * The name and signature of the console command.
      *
@@ -34,22 +28,22 @@ class GetStats extends Command
     /**
      * Index manager instance used for all index operations.
      *
-     * @var \EloquentElastic\Manager
+     * @var \EloquentElastic\IndexManager
      */
     protected $indexManager;
-
 
     /**
      * Create a new command instance.
      *
-     * @param  \EloquentElastic\Manager $indexManager
+     * @param  \EloquentElastic\IndexManager $indexManager
+     * @return void
      */
     public function __construct(IndexManager $indexManager)
     {
         parent::__construct();
+
         $this->indexManager = $indexManager;
     }
-
 
     /**
      * Execute the console command.
@@ -59,21 +53,21 @@ class GetStats extends Command
     public function handle()
     {
         $indexName = $this->option('index') ?: $this->indexManager->getDefaultIndex();
-        $dump      = $this->option('dump') ? true : false;
-        $stats     = $this->indexManager->stats($indexName);
+        $dump = $this->option('dump') ? true : false;
+
+        $stats = $this->indexManager->stats($indexName);
+
         if ($dump) {
-            ( new Dumper )->dump($stats);
+            (new Dumper)->dump($stats);
         } else {
             $this->printStats($stats);
         }
     }
 
-
     /**
      * Print the stats.
      *
      * @param  array stats
-     *
      * @return void
      */
     public function printStats(array $stats)
@@ -81,21 +75,28 @@ class GetStats extends Command
         $shardStats = $stats['_shards'];
         $this->info('Shards');
         $this->line("  {$shardStats['total']} total, {$shardStats['successful']} successful, {$shardStats['failed']} failed");
+
         $allIndices = $stats['_all'];
         $this->info('All Indices');
+
         $totalStats = $allIndices['total'];
+
         if ($docsStats = Arr::get($totalStats, 'docs')) {
             $this->line("  Documents:   {$docsStats['count']} total, {$docsStats['deleted']} deleted");
         }
+
         if ($storeStats = Arr::get($totalStats, 'store')) {
             $this->line("  Store:       {$storeStats['size_in_bytes']} Bytes");
         }
+
         if ($searchStats = Arr::get($totalStats, 'search')) {
             $this->line("  Search:      {$searchStats['query_total']} queries, {$searchStats['query_time_in_millis']} ms");
         }
+
         if ($cacheStats = Arr::get($totalStats, 'query_cache')) {
             $this->line("  Query Cache: {$cacheStats['hit_count']} hits, {$cacheStats['miss_count']} misses, {$cacheStats['memory_size_in_bytes']} Bytes");
         }
+
         $this->line('');
     }
 }

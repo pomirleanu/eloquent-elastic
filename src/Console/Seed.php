@@ -1,21 +1,15 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 2:17 PM
- */
+
 namespace EloquentElastic\Console;
 
+use EloquentElastic\Contracts\IndexedModel as IndexedModelContract;
 use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
-use EloquentElastic\Contracts\Model as ModelContract;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Helper\ProgressBar;
 
-class GetStats extends Command
+class Seed extends Command
 {
-
     use ConfirmableTrait;
 
     /**
@@ -41,16 +35,15 @@ class GetStats extends Command
      * @var array
      */
     protected $progressBarFormats = [
-        'normal'             => "<info>%message%</info>\n %current%/%max% [%bar%] %percent:3s%%",
-        'normal_nomax'       => "<info>%message%</info>\n %current% [%bar%]",
-        'verbose'            => "<info>%message%</info>\n %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%",
-        'verbose_nomax'      => "<info>%message%</info>\n %current% [%bar%] %elapsed:6s%",
-        'very_verbose'       => "<info>%message%</info>\n %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s%",
+        'normal' => "<info>%message%</info>\n %current%/%max% [%bar%] %percent:3s%%",
+        'normal_nomax' => "<info>%message%</info>\n %current% [%bar%]",
+        'verbose' => "<info>%message%</info>\n %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%",
+        'verbose_nomax' => "<info>%message%</info>\n %current% [%bar%] %elapsed:6s%",
+        'very_verbose' => "<info>%message%</info>\n %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s%",
         'very_verbose_nomax' => "<info>%message%</info>\n %current% [%bar%] %elapsed:6s%",
-        'debug'              => "<info>%message%</info>\n %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%",
-        'debug_nomax'        => "<info>%message%</info>\n %current% [%bar%] %elapsed:6s% %memory:6s%",
+        'debug' => "<info>%message%</info>\n %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%",
+        'debug_nomax' => "<info>%message%</info>\n %current% [%bar%] %elapsed:6s% %memory:6s%",
     ];
-
 
     /**
      * Execute the console command.
@@ -59,15 +52,20 @@ class GetStats extends Command
      */
     public function handle()
     {
-        if ( ! $this->confirmToProceed()) {
+        if (! $this->confirmToProceed()) {
             return 1;
         }
+
         $method = $this->option('save') ? 'save' : 'add';
+
         $this->initProgressBarFormats();
+
         $models = explode(',', trim($this->argument('model')));
-        if (( $models = $this->parseModelsArgument($models) ) === false) {
+
+        if (($models = $this->parseModelsArgument($models)) === false) {
             return 1;
         }
+
         foreach ($models as $model) {
             $this->addModelsToIndex($model, $method);
         }
@@ -75,57 +73,58 @@ class GetStats extends Command
         return 0;
     }
 
-
     /**
      * Checks if the specified models are valid indexed model classes and builds
      * an array of fully qualified class names.
      *
      * @param  array $models
-     *
      * @return bool|array
      */
     protected function parseModelsArgument(array $models)
     {
-        $parsed = [ ];
+        $parsed = [];
+
         foreach ($models as $model) {
             $class = $this->parseModelName(trim($model));
-            if ( ! class_exists($class)) {
+
+            if (! class_exists($class)) {
                 $this->error("Model class '{$class}' does not exist!");
 
                 return false;
             }
-            if ( ! ( ( new $class ) instanceof ModelContract )) {
-                $this->error("Model class '{$class}' does not implement the '" . ModelContract::class . "' interface!");
+
+            if (! ((new $class) instanceof IndexedModelContract)) {
+                $this->error("Model class '{$class}' does not implement the '".IndexedModelContract::class."' interface!");
 
                 return false;
             }
+
             $parsed[] = $class;
         }
 
         return $parsed;
     }
 
-
     /**
      * Parse the model name and format according to the root namespace.
      *
-     * @param  string $name
-     *
+     * @param  string  $name
      * @return string
      */
     protected function parseModelName($name)
     {
         $rootNamespace = $this->laravel->getNamespace();
+
         if (Str::startsWith($name, $rootNamespace)) {
             return $name;
         }
+
         if (Str::contains($name, '/')) {
             $name = str_replace('/', '\\', $name);
         }
 
-        return $this->parseModelName(trim($rootNamespace, '\\') . '\\' . $name);
+        return $this->parseModelName(trim($rootNamespace, '\\').'\\'.$name);
     }
-
 
     /**
      * Init the ProgressBar formats.
@@ -139,38 +138,43 @@ class GetStats extends Command
         }
     }
 
-
     /**
      * Add models of the specified type to the index.
      *
      * @param  string $class
-     *
-     * @param string  $method
-     * @param int     $chunkSize
+     * @return void
      */
     protected function addModelsToIndex($class, $method = 'add', $chunkSize = 100)
     {
         $this->getOutput()->newLine(1);
         $progressBar = $this->getOutput()->createProgressBar();
         $progressBar->setMessage("Seeding '{$class}' models ...");
+
         $modelCount = $class::query()->getQuery()->getCountForPagination();
         $progressBar->start($modelCount);
+
         // Get the repository for the indexed model class.
         $repository = $class::getClassIndexRepository();
+
         // Use chunking to relax memory pressure.
         $class::chunk($chunkSize, function ($models) use ($repository, $method, $progressBar) {
             $repository->$method($models);
+
             $progressBar->advance($models->count());
+
             $models = null;
         });
+
         if ($modelCount === 0) {
             $this->warn("No instances of '{$class}' found, nothing to do.");
             $this->getOutput()->newLine(1);
 
             return;
         }
+
         $progressBar->finish();
         $this->getOutput()->newLine(1);
+
         $this->info("{$modelCount} instance(s) of '{$class}' added to index.");
         $this->getOutput()->newLine(1);
     }

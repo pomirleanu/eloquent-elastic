@@ -1,20 +1,13 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 2:17 PM
- */
 
 namespace EloquentElastic\Console;
 
-use EloquentElastic\Manager as IndexManager;
 use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
+use EloquentElastic\IndexManager;
 
 class DeleteIndex extends Command
 {
-
     use ConfirmableTrait;
 
     /**
@@ -36,22 +29,22 @@ class DeleteIndex extends Command
     /**
      * Index manager instance used for all index operations.
      *
-     * @var \EloquentElastic\Manager
+     * @var \EloquentElastic\IndexManager
      */
     protected $indexManager;
-
 
     /**
      * Create a new command instance.
      *
-     * @param  \EloquentElastic\Manager $indexManager
+     * @param  \EloquentElastic\IndexManager $indexManager
+     * @return void
      */
     public function __construct(IndexManager $indexManager)
     {
         parent::__construct();
+
         $this->indexManager = $indexManager;
     }
-
 
     /**
      * Execute the console command.
@@ -60,11 +53,14 @@ class DeleteIndex extends Command
      */
     public function handle()
     {
-        if ( ! $this->confirmToProceed()) {
+        if (! $this->confirmToProceed()) {
             return 1;
         }
+
         $indexName = $this->option('index') ?: $this->indexManager->getDefaultIndex();
+
         $this->indexManager->deleteIndex($indexName);
+
         $this->info("Index '{$indexName}' successfully deleted.");
     }
 }

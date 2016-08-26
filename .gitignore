@@ -1,3 +1,5 @@
-.vendor
 /vendor
-vendor/autoload.php
+composer.phar
+composer.lock
+.DS_Store
+Thumbs.db

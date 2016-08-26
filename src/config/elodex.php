@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 2:03 PM
- */
 
 return [
     /*
@@ -24,6 +18,7 @@ return [
         'logLevel'  => \Monolog\Logger::INFO,
         'retries'   => 1,
     ],
+
     /*
       |--------------------------------------------------------------------------
       | Default Index Name
@@ -33,6 +28,7 @@ return [
       |
     */
     'default_index' => 'laravel_elodex_index',
+
     /*
       |--------------------------------------------------------------------------
       | Index Analyzers
@@ -44,4 +40,5 @@ return [
      */
     'analyzer' => [
     ],
+
 ];

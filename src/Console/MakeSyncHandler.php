@@ -1,19 +1,13 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 2:17 PM
- */
+
 namespace EloquentElastic\Console;
 
+use EloquentElastic\Contracts\IndexedModel as IndexedModelContract;
 use Illuminate\Console\GeneratorCommand;
-use EloquentElastic\Contracts\Model as ModelContract;
 use Illuminate\Support\Str;
 
 class MakeSyncHandler extends GeneratorCommand
 {
-
     /**
      * The name and signature of the console command.
      *
@@ -21,24 +15,28 @@ class MakeSyncHandler extends GeneratorCommand
      */
     protected $signature = 'make:es:sync-handler
                             {name : The indexed model class}';
+
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create a new index synchronization handler for an indexed Elodex model class';
+    protected $description = 'Create a new index synchronization handler for an indexed EloquentElastic model class';
+
     /**
      * The type of class being generated.
      *
      * @var string
      */
     protected $type = 'Listener';
+
     /**
      * The postfix used for the sync handler.
      *
      * @var string
      */
     protected $listenerPostfix = 'IndexSyncHandler';
+
     /**
      * Execute the console command.
      *
@@ -47,18 +45,24 @@ class MakeSyncHandler extends GeneratorCommand
     public function fire()
     {
         $model = $this->parseModelName($this->argument('name'));
+
         // Check if the model class exists.
         if (! class_exists($model)) {
             $this->error("Model class '{$model}' does not exist!");
+
             return false;
         }
+
         // Check if the model class implements the indexed model interface.
-        if (! ((new $model) instanceof ModelContract)) {
-            $this->error("Model class '{$model}' does not implement the '".ModelContract::class."' interface!");
+        if (! ((new $model) instanceof IndexedModelContract)) {
+            $this->error("Model class '{$model}' does not implement the '".IndexedModelContract::class."' interface!");
+
             return false;
         }
+
         parent::fire();
     }
+
     /**
      * Build the class with the given name.
      *
@@ -68,15 +72,20 @@ class MakeSyncHandler extends GeneratorCommand
     protected function buildClass($name)
     {
         $fqModelClass = $this->parseModelName($this->argument('name'));
+
         $stub = parent::buildClass($name);
+
         $stub = str_replace(
             '{FQModelClass}', $fqModelClass, $stub
         );
+
         $stub = str_replace(
             '{Listener}', class_basename($name), $stub
         );
+
         return $stub;
     }
+
     /**
      * Get the listener class name for the 'name' argument.
      *
@@ -87,6 +96,7 @@ class MakeSyncHandler extends GeneratorCommand
     {
         return class_basename($name).$this->listenerPostfix;
     }
+
     /**
      * Get the stub file for the generator.
      *
@@ -96,6 +106,7 @@ class MakeSyncHandler extends GeneratorCommand
     {
         return __DIR__.'/stubs/listener.stub';
     }
+
     /**
      * Determine if the class already exists.
      *
@@ -106,6 +117,7 @@ class MakeSyncHandler extends GeneratorCommand
     {
         return class_exists($this->parseName($rawName));
     }
+
     /**
      * Parse the model name and format according to the root namespace.
      *
@@ -115,14 +127,18 @@ class MakeSyncHandler extends GeneratorCommand
     protected function parseModelName($name)
     {
         $rootNamespace = $this->laravel->getNamespace();
+
         if (Str::startsWith($name, $rootNamespace)) {
             return $name;
         }
+
         if (Str::contains($name, '/')) {
             $name = str_replace('/', '\\', $name);
         }
+
         return $this->parseName(trim($rootNamespace, '\\').'\\'.$name);
     }
+
     /**
      * Get the default namespace for the class.
      *
@@ -133,6 +149,7 @@ class MakeSyncHandler extends GeneratorCommand
     {
         return $rootNamespace.'\Listeners';
     }
+
     /**
      * Get the desired class name from the input.
      *

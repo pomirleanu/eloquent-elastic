@@ -1,19 +1,12 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 12:49 PM
- */
 
-namespace EloquentElastic\Traits;
-
+namespace EloquentElastic;
 
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
-trait MappingTrait
+trait IndexMapping
 {
     /**
      * Additional custom property mappings used for the index.
@@ -21,12 +14,14 @@ trait MappingTrait
      * @var array
      */
     protected $indexMappingProperties = [];
+
     /**
      * Formatting used for the mapping of date properties.
      *
      * @var string
      */
     protected $indexMappingDateFormat = 'yyyy-MM-dd HH:mm:ss';
+
     /**
      * Get the mapping properties of the current instance used for the index.
      *
@@ -36,6 +31,7 @@ trait MappingTrait
     {
         return $this->getIndexMappingPropertiesForModel($this, $this->indexRelations, $this->indexMappingProperties);
     }
+
     /**
      * Get the mapping properties for a model used for the index.
      *
@@ -52,9 +48,11 @@ trait MappingTrait
             $this->getIndexRelationsMappingProperties($model, $indexRelations),
             $this->getDefaultIndexMappingProperties($model)
         );
+
         // Custom mappings may overwrite any previously defined mapping.
         return array_replace($merged, $customMappings);
     }
+
     /**
      * Returns a default property mapping for the index based on the casts
      * property.
@@ -65,10 +63,12 @@ trait MappingTrait
     protected function getDefaultIndexMappingProperties(BaseModel $model)
     {
         $mappings = [];
+
         // Process all date attributes
         $dateFormat = $model->getDateFormat();
         if ($dateFormat === Carbon::DEFAULT_TO_STRING_FORMAT) {
             $dateAttributes = $this->getVisibleIndexDates($model);
+
             foreach ($dateAttributes as $key) {
                 $mappings[$key] = [
                     'type' => 'date',
@@ -76,10 +76,12 @@ trait MappingTrait
                 ];
             }
         }
+
         // Process all casts
         $castAttributes = $this->getVisibleIndexCasts($model);
         foreach ($castAttributes as $key => $value) {
             $indexType = $this->getIndexAttributeType($model, $key);
+
             if (! is_null($indexType)) {
                 $mappings[$key] = ['type' => $indexType];
                 if ($indexType === 'date') {
@@ -87,8 +89,10 @@ trait MappingTrait
                 }
             }
         }
+
         return $mappings;
     }
+
     /**
      * Get an array of mapping properties for all index relevant relations.
      *
@@ -101,8 +105,10 @@ trait MappingTrait
         if (empty($indexRelations)) {
             return [];
         }
+
         // Walk through all relations of the specified model to build the needed mappings.
         $mappings = [];
+
         foreach ($indexRelations as $relation) {
             // Check for a nested relation.
             if (($p = strpos($relation, '.')) !== false) {
@@ -113,11 +119,14 @@ trait MappingTrait
             } else {
                 $relatedIndexRelations = [];
             }
+
             // Get the mappings for the properties of the related model.
             $relationMappings = $this->getIndexMappingsForRelation($model, $relation, $relatedIndexRelations);
+
             if (static::$snakeAttributes) {
                 $key = Str::snake($relation);
             }
+
             // Note that the parent of a relationship is always responsible
             // for the creation of the mapping properties of its children.
             // This is because the index document has a nested structure but
@@ -125,12 +134,15 @@ trait MappingTrait
             $mappings[$key] = [
                 'properties' => $relationMappings,
             ];
+
             // Check if we should use nested object mappings which would create
             // hidden documents for the relationship documents.
             $mappings[$key]['type'] = $useNestedType ? 'nested' : 'object';
         }
+
         return $mappings;
     }
+
     /**
      * Get the index property mappings for the relation of the specified parent
      * model.
@@ -144,16 +156,20 @@ trait MappingTrait
     {
         // Create the relation instance.
         $relationInstance = $parent->$relation();
+
         // Get an instance of the related model of the relation.
         $relatedModel = $relationInstance->getRelated();
+
         if (property_exists($relatedModel, 'indexMappingProperties')) {
             $customRelationMappings = $relatedModel->indexMappingProperties;
         } else {
             $customRelationMappings = [];
         }
+
         // Recursive call to load all index property mappings of the related model.
         return $this->getIndexMappingPropertiesForModel($relatedModel, $relatedIndexRelations, $customRelationMappings);
     }
+
     /**
      * Get the visible model date attributes for the index.
      *
@@ -165,8 +181,10 @@ trait MappingTrait
         if (count($model->getVisible()) > 0) {
             return array_intersect($model->getDates(), $model->getVisible());
         }
+
         return array_diff($model->getDates(), $model->getHidden());
     }
+
     /**
      * Get the visible model casts for the index.
      *
@@ -178,8 +196,10 @@ trait MappingTrait
         if (count($model->getVisible()) > 0) {
             return array_intersect_key($model->getCasts(), array_flip($model->getVisible()));
         }
+
         return array_diff_key($model->getCasts(), array_flip($model->getHidden()));
     }
+
     /**
      * Map the type of an Eloquent model attribute to an index attribute type.
      *
@@ -195,28 +215,36 @@ trait MappingTrait
             case 'int':
             case 'integer':
                 return 'integer';
+
             case 'real':
             case 'float':
                 return 'float';
+
             case 'double':
                 return 'double';
+
             case 'string':
                 return 'string';
+
             case 'bool':
             case 'boolean':
                 return 'boolean';
+
             case 'date':
             case 'datetime':
             case 'timestamp':
                 return 'date';
+
             case 'array':
             case 'collection':
             case 'object':
             case 'json':
                 return 'object';
+
             default:
                 break;
         }
+
         return null;
     }
 }

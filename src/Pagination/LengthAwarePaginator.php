@@ -1,17 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 12:10 PM
- */
 
 namespace EloquentElastic\Pagination;
 
+use Illuminate\Pagination\LengthAwarePaginator as BasePaginator;
 
-use Illuminate\Contracts\Pagination\LengthAwarePaginator as Paginator;
-
-class LengthAwarePaginator extends Paginator
+class LengthAwarePaginator extends BasePaginator
 {
     /**
      * The search result instance for this paginator.
@@ -19,6 +12,7 @@ class LengthAwarePaginator extends Paginator
      * @var \EloquentElastic\SearchResult
      */
     protected $searchResult;
+
     /**
      * Create a new paginator instance.
      *
@@ -30,19 +24,25 @@ class LengthAwarePaginator extends Paginator
     public function __construct($searchResult, $perPage, $currentPage = null, array $options = [])
     {
         $this->searchResult = $searchResult;
+
         $total = $this->searchResult->totalHits();
         $items = $this->searchResult->getDocuments();
+
         parent::__construct($items, $total, $perPage, $currentPage, $options);
     }
+
     /**
      * {@inheritdoc}
      */
     public function toArray()
     {
         $data = parent::toArray();
+
         $data['search_result'] = $this->searchResult->toArray();
+
         return $data;
     }
+
     /**
      * Get the collection of models for the search result.
      *
@@ -53,6 +53,7 @@ class LengthAwarePaginator extends Paginator
     {
         return $this->searchResults->getModels($with);
     }
+
     /**
      * Get the search result instance for this paginator.
      *

@@ -1,29 +1,22 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 12:52 PM
- */
 
-namespace EloquentElastic\Traits;
+namespace EloquentElastic;
 
-use EloquentElastic\Collection;
-use EloquentElastic\Contracts\Document;
-use Illuminate\Contracts\Support\Arrayable;
+use EloquentElastic\Contracts\IndexedDocument;
 use Illuminate\Support\Str;
+use Illuminate\Contracts\Support\Arrayable;
 
-trait ModelTrait
+trait IndexedModel
 {
-
-    use ManagementTrait, AccessTrait, GenQueryTrait;
+    use IndexManagement,
+        IndexRepositoryAccess;
 
     /**
      * The relationships that should be added to the index document.
      *
      * @var array
      */
-    protected $indexRelations = [ ];
+    protected $indexRelations = [];
 
     /**
      * The version of the model's document in the index.
@@ -39,7 +32,6 @@ trait ModelTrait
      */
     protected $indexScore;
 
-
     /**
      * {@inheritdoc}
      */
@@ -47,7 +39,6 @@ trait ModelTrait
     {
         return $this->getTable();
     }
-
 
     /**
      * {@inheritdoc}
@@ -57,7 +48,6 @@ trait ModelTrait
         return $this->getKey();
     }
 
-
     /**
      * {@inheritdoc}
      */
@@ -66,7 +56,6 @@ trait ModelTrait
         return $this->indexRelations;
     }
 
-
     /**
      * {@inheritdoc}
      */
@@ -74,19 +63,21 @@ trait ModelTrait
     {
         // Temporarily disable all whitelisting and blacklisting for relations.
         $visible = $this->getVisible();
-        $hidden  = $this->getHidden();
+        $hidden = $this->getHidden();
         $this->hideNonIndexRelations();
+
         // Load all needed relations for the index document.
         $this->loadIndexRelations();
+
         // Convert the model to a document representation.
         $document = array_merge($this->attributesToArray(), $this->indexRelationsDocuments());
+
         // Restore whitelist and blacklist properties.
         $this->setHidden($hidden);
         $this->setVisible($visible);
 
         return $document;
     }
-
 
     /**
      * Get an array of documents for the index relations.
@@ -95,36 +86,43 @@ trait ModelTrait
      */
     public function indexRelationsDocuments()
     {
-        $documents = [ ];
+        $documents = [];
+
         foreach ($this->indexRelations as $relation) {
             $related = $this->relations[$relation];
+
             // Check if the related instance implements the indexed document
             // interface to create a document representation.
-            if ($related instanceof Document) {
+            if ($related instanceof IndexedDocument) {
                 $document = $related->toIndexDocument();
-            } // Fallback to the Arrayable interface and its toArray method.
+            }
+
+            // Fallback to the Arrayable interface and its toArray method.
             elseif ($related instanceof Arrayable) {
                 $document = $related->toArray();
             }
+
             // If the value is null, we'll still go ahead and set it in this list of
             // attributes since null is used to represent empty relationships if
             // if it a has one or belongs to type relationships on the models.
             elseif (is_null($related)) {
                 $document = $related;
             }
+
             // Make sure the relation name is snake-cased if needed.
             if (static::$snakeAttributes) {
                 $relation = Str::snake($relation);
             }
-            if (isset( $relation ) || is_null($related)) {
+
+            if (isset($relation) || is_null($related)) {
                 $documents[$relation] = $document;
             }
-            unset( $document );
+
+            unset($document);
         }
 
         return $documents;
     }
-
 
     /**
      * {@inheritdoc}
@@ -135,28 +133,29 @@ trait ModelTrait
         // there's no reliable way to know which relations might have changed.
         // Check which attributes are marked as 'dirty'.
         $dirtyAttributes = array_keys($this->getDirty());
-        if (empty( $dirtyAttributes )) {
-            return [ ];
+        if (empty($dirtyAttributes)) {
+            return [];
         }
+
         // Use temporary whitelisting to exclude all attributes that have not changed.
         $visible = $this->getVisible();
         $this->setVisible($dirtyAttributes);
+
         // Convert the dirty attributes to an array.
         // Note that no relationships are being included here since there's no
         // tight binding between related models and their parents.
         $document = $this->attributesToArray();
+
         // Restore the visible attributes on the model.
         $this->setVisible($visible);
 
         return $document;
     }
 
-
     /**
      * Set the index document version.
      *
      * @param  int $version
-     *
      * @return $this
      */
     public function setIndexVersion($version)
@@ -165,7 +164,6 @@ trait ModelTrait
 
         return $this;
     }
-
 
     /**
      * Get the index document version.
@@ -177,12 +175,10 @@ trait ModelTrait
         return $this->indexVersion;
     }
 
-
     /**
      * Set the index score of the model.
      *
      * @param  float $score
-     *
      * @return $this
      */
     public function setIndexScore($score)
@@ -191,7 +187,6 @@ trait ModelTrait
 
         return $this;
     }
-
 
     /**
      * Get the index score of the model.
@@ -203,7 +198,6 @@ trait ModelTrait
         return $this->indexScore;
     }
 
-
     /**
      * {@inheritdoc}
      */
@@ -211,7 +205,6 @@ trait ModelTrait
     {
         return $this->exists;
     }
-
 
     /**
      * Hides all relations which are not meant to be part of the indexed document.
@@ -224,9 +217,11 @@ trait ModelTrait
         // shouldn't be added to the document are being hidden.
         $loadedRelations = array_keys($this->relations);
         $hiddenRelations = array_diff($loadedRelations, $this->indexRelations);
-        if (empty( $hiddenRelations )) {
+
+        if (empty($hiddenRelations)) {
             return;
         }
+
         // Remove all visible non-indexed relations from the whitelist.
         $visible = $this->getVisible();
         if (count($visible) > 0) {
@@ -234,10 +229,10 @@ trait ModelTrait
 
             return;
         }
+
         // Add the non-indexed relations to the blacklist.
         $this->addHidden($hiddenRelations);
     }
-
 
     /**
      * Load all relations relevant for the indexed document.
@@ -249,17 +244,16 @@ trait ModelTrait
         // Do not load any index relations if the indicating property is null on
         // the model instance. This does give subclasses the opportunity to disable
         // this functionality without having to override the method.
-        if ( ! empty( $this->indexRelations )) {
+        if (! empty($this->indexRelations)) {
             // Don't load already loaded relations
             $this->load(array_diff($this->indexRelations, array_keys($this->relations)));
         }
     }
 
-
     /**
      * {@inheritdoc}
      */
-    public function newCollection(array $models = [ ])
+    public function newCollection(array $models = [])
     {
         return new Collection($models);
     }

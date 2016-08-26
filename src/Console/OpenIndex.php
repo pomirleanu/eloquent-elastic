@@ -1,18 +1,12 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 2:17 PM
- */
+
 namespace EloquentElastic\Console;
 
-use EloquentElastic\Manager as IndexManager;
 use Illuminate\Console\Command;
+use EloquentElastic\IndexManager;
 
-class GetStats extends Command
+class OpenIndex extends Command
 {
-
     /**
      * The name and signature of the console command.
      *
@@ -31,22 +25,22 @@ class GetStats extends Command
     /**
      * Index manager instance used for all index operations.
      *
-     * @var \EloquentElastic\Manager
+     * @var \EloquentElastic\IndexManager
      */
     protected $indexManager;
-
 
     /**
      * Create a new command instance.
      *
-     * @param  \EloquentElastic\Manager $indexManager
+     * @param  \EloquentElastic\IndexManager $indexManager
+     * @return void
      */
     public function __construct(IndexManager $indexManager)
     {
         parent::__construct();
+
         $this->indexManager = $indexManager;
     }
-
 
     /**
      * Execute the console command.
@@ -56,7 +50,9 @@ class GetStats extends Command
     public function handle()
     {
         $indexName = $this->option('index') ?: $this->indexManager->getDefaultIndex();
+
         $this->indexManager->openIndex($indexName);
+
         $this->info("Index '{$indexName}' successfully opened.");
     }
 }

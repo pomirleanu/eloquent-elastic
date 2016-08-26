@@ -2,7 +2,7 @@
 
 namespace App\Listeners;
 
-use EloquentElastic\Manager as EloquentElasticManager;
+use EloquentElastic\IndexRepositoryManager;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use {FQModelClass} as Model;
@@ -21,9 +21,9 @@ class {Listener} implements ShouldQueue
     /**
      * Create a new event subscriber instance.
      *
-     * @param \EloquentElastic\EloquentElasticManager $repositoryManager
+     * @param \EloquentElastic\IndexRepositoryManager $repositoryManager
      */
-    public function __construct(EloquentElasticManager $repositoryManager)
+    public function __construct(IndexRepositoryManager $repositoryManager)
     {
         $this->repository = $repositoryManager->repository(Model::class);
     }

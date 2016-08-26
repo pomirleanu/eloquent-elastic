@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 1:20 PM
- */
 
 namespace EloquentElastic;
 
@@ -20,18 +14,21 @@ class Suggest implements Arrayable
      * @var \EloquentElastic\IndexManager
      */
     protected $indexManager;
+
     /**
      * Global suggest text to use.
      *
      * @var string
      */
     protected $text;
+
     /**
      * List of suggesters.
      *
      * @var array
      */
     protected $suggesters = [];
+
     /**
      * Create a new suggest instance.
      *
@@ -41,6 +38,7 @@ class Suggest implements Arrayable
     {
         $this->indexManager = $indexManager;
     }
+
     /**
      * Set the global suggest text.
      *
@@ -50,8 +48,10 @@ class Suggest implements Arrayable
     public function setText($value)
     {
         $this->text = $value;
+
         return $this;
     }
+
     /**
      * Get the global suggest text.
      *
@@ -61,6 +61,7 @@ class Suggest implements Arrayable
     {
         return $this->text;
     }
+
     /**
      * Add a term suggestion request.
      *
@@ -72,8 +73,10 @@ class Suggest implements Arrayable
     public function term($name, $text, array $parameters = [])
     {
         $this->suggesters[] = new TermSuggest($name, $text, $parameters);
+
         return $this;
     }
+
     /**
      * Run the suggestion request.
      *
@@ -84,6 +87,7 @@ class Suggest implements Arrayable
     {
         return $this->indexManager->suggest($this, $index);
     }
+
     /**
      * Get the suggest query array.
      *
@@ -92,14 +96,18 @@ class Suggest implements Arrayable
     public function toArray()
     {
         $output = [];
+
         if (! empty($this->text)) {
             $output['text'] = $this->text;
         }
+
         foreach ($this->suggesters as $suggester) {
             $output = array_merge($output, $suggester->toArray());
         }
+
         return array_filter($output);
     }
+
     /**
      * Create a new suggest query instance.
      *
@@ -111,6 +119,7 @@ class Suggest implements Arrayable
         if (is_null($indexManager)) {
             return Container::getInstance()->make(static::class);
         }
+
         return new static($indexManager);
     }
 }

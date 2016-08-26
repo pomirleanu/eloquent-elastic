@@ -1,14 +1,22 @@
 <?php
 
-namespace EloquentElastic\Providers;
+namespace EloquentElastic;
 
-use EloquentElastic\Client;
-use EloquentElastic\Manager;
 use Illuminate\Support\ServiceProvider;
+use EloquentElastic\Console\OpenIndex;
+use EloquentElastic\Console\CloseIndex;
+use EloquentElastic\Console\DeleteIndex;
+use EloquentElastic\Console\CreateIndex;
+use EloquentElastic\Console\GetMappings;
+use EloquentElastic\Console\GetStats;
+use EloquentElastic\Console\GetSettings;
+use EloquentElastic\Console\Upgrade;
+use EloquentElastic\Console\Analyze;
+use EloquentElastic\Console\MakeSyncHandler;
+use EloquentElastic\Console\Seed;
 
-class EloquentElasticServiceProvider extends ServiceProvider
+class IndexServiceProvider extends ServiceProvider
 {
-
     /**
      * Indicates if loading of the provider is deferred.
      *
@@ -16,29 +24,19 @@ class EloquentElasticServiceProvider extends ServiceProvider
      */
     protected $defer = true;
 
-
     /**
-     * Bootstrap the application services.
-     *
-     * @return void
-     */
-    public function boot()
-    {
-        //
-    }
-
-
-    /**
-     * Register the application services.
+     * Register the service provider.
      *
      * @return void
      */
     public function register()
     {
         $this->setupConfig();
+
         $this->registerElasticsearchClient();
         $this->registerIndexManager();
         $this->registerIndexRepositoryManager();
+
         $this->registerCommands();
     }
 
@@ -50,9 +48,12 @@ class EloquentElasticServiceProvider extends ServiceProvider
     protected function setupConfig()
     {
         $source = realpath(__DIR__.'/config/elodex.php');
+
         $this->publishes([$source => config_path('elodex.php')], 'config');
+
         $this->mergeConfigFrom($source, 'elodex');
     }
+
     /**
      * Register the Elasticsearch client manager.
      *
@@ -60,12 +61,15 @@ class EloquentElasticServiceProvider extends ServiceProvider
      */
     protected function registerElasticsearchClient()
     {
-        $this->app->singleton(Client::class, function ($app) {
+        $this->app->singleton(ElasticsearchClientManager::class, function ($app) {
             $config = $app['config']->get('elodex.config');
-            return new Client($config);
+
+            return new ElasticsearchClientManager($config);
         });
-        $this->app->alias(Client::class, 'elodex.client');
+
+        $this->app->alias(ElasticsearchClientManager::class, 'elodex.client');
     }
+
     /**
      * Register the index manager.
      *
@@ -73,13 +77,16 @@ class EloquentElasticServiceProvider extends ServiceProvider
      */
     protected function registerIndexManager()
     {
-        $this->app->singleton(Manager::class, function ($app) {
-            $client = $app[Client::class];
+        $this->app->singleton(IndexManager::class, function ($app) {
+            $client = $app[ElasticsearchClientManager::class];
             $config = $app['config']->get('elodex');
-            return new Manager($client, $config);
+
+            return new IndexManager($client, $config);
         });
-        $this->app->alias(Manager::class, 'elodex.index');
+
+        $this->app->alias(IndexManager::class, 'elodex.index');
     }
+
     /**
      * Register the index repostiory manager.
      *
@@ -87,13 +94,16 @@ class EloquentElasticServiceProvider extends ServiceProvider
      */
     protected function registerIndexRepositoryManager()
     {
-        $this->app->singleton(Manager::class, function ($app) {
-            $client = $app[Client::class];
+        $this->app->singleton(IndexRepositoryManager::class, function ($app) {
+            $client = $app[ElasticsearchClientManager::class];
             $indexName = $app['config']->get('elodex.default_index', 'default');
-            return new Manager($client, $indexName);
+
+            return new IndexRepositoryManager($client, $indexName);
         });
-        $this->app->alias(Manager::class, 'elodex.repository');
+
+        $this->app->alias(IndexRepositoryManager::class, 'elodex.repository');
     }
+
     /**
      * Register the console commands.
      *
@@ -101,7 +111,8 @@ class EloquentElasticServiceProvider extends ServiceProvider
      */
     protected function registerCommands()
     {
-        $indexManager = $this->app[Manager::class];
+        $indexManager = $this->app[IndexManager::class];
+
         $this->app->singleton(OpenIndex::class, function () use ($indexManager) {
             return new OpenIndex($indexManager);
         });
@@ -132,6 +143,7 @@ class EloquentElasticServiceProvider extends ServiceProvider
         $this->app->singleton(Seed::class, function () use ($indexManager) {
             return new Seed($indexManager);
         });
+
         $this->commands(
             OpenIndex::class,
             CloseIndex::class,
@@ -146,6 +158,7 @@ class EloquentElasticServiceProvider extends ServiceProvider
             MakeSyncHandler::class
         );
     }
+
     /**
      * Get the services provided by the provider.
      *

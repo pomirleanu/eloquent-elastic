@@ -21,6 +21,17 @@
       "email": "pomirleanu.florentin@gmail.com"
     }
   ],
+  "autoload": {
+    "psr-4": {
+      "EloquentElastic\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "classmap": [
+      "tests/Functional/MappingModel.php",
+      "tests/Integration/IndexedModel.php"
+    ]
+  },
   "extra": {
     "branch-alias": {
       "dev-master": "1.0.x-dev"

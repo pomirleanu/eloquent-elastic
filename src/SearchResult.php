@@ -1,16 +1,14 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 12:59 PM
- */
 
 namespace EloquentElastic;
 
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Contracts\Support\Arrayable;
+use IteratorAggregate;
+use Countable;
 
-class SearchResult
+class SearchResult implements IteratorAggregate, Countable, Arrayable
 {
     /**
      * The partial raw search result data.
@@ -18,24 +16,28 @@ class SearchResult
      * @var array
      */
     protected $data;
+
     /**
      * The model class for with the documents were created.
      *
      * @var string
      */
     protected $entityClass;
+
     /**
      * Dictionary of metadata for the documents.
      *
      * @var \Illuminate\Support\Collection
      */
     protected $metadata;
+
     /**
      * The documents returned by the search result.
      *
      * @var \Illuminate\Support\Collection
      */
     protected $documents;
+
     /**
      * Collection of model entities belonging to the search result documents.
      * Will be lazily fetched upon access.
@@ -43,12 +45,14 @@ class SearchResult
      * @var \EloquentElastic\Collection|null
      */
     protected $items;
+
     /**
      * The suggest result instance if available.
      *
      * @var \EloquentElastic\SuggestResult|null
      */
     protected $suggestResult;
+
     /**
      * Create a new SearchResult instance.
      *
@@ -58,17 +62,22 @@ class SearchResult
     public function __construct($results, $entityClass)
     {
         $this->data = $results;
+
         $this->entityClass = $entityClass;
+
         // Process the hits of the query result data.
         $this->metadata = $this->metadataForHits($this->data['hits']);
         $this->documents = $this->documentCollectionForHits($this->data['hits']);
+
         unset($this->data['hits']['hits']);
         $this->items = null;
+
         // Process the suggestions of the query result data.
         if (isset($this->data['suggest'])) {
             $this->suggestResult = new SuggestResult($this->data['suggest']);
         }
     }
+
     /**
      * Return the metadata from the hits as a dictionary keyes by the hit IDs.
      *
@@ -79,11 +88,14 @@ class SearchResult
     {
         $metadata = [];
         $exclusions = ['_id', '_index', '_type', '_source'];
+
         foreach ($hits['hits'] as $hit) {
             $metadata[$hit['_id']] = array_except($hit, $exclusions);
         }
+
         return new BaseCollection($metadata);
     }
+
     /**
      * Builds a documents collection out of the search hits results keyed by
      * their ID.
@@ -94,11 +106,14 @@ class SearchResult
     protected function documentCollectionForHits(array $hits)
     {
         $items = [];
+
         foreach ($hits['hits'] as $hit) {
             $items[$hit['_id']] = $hit['_source'];
         }
+
         return new BaseCollection($items);
     }
+
     /**
      * Loads the Eloquent models for the indexed documents found by the search.
      * Uses eager loading for the specified relations array.
@@ -110,12 +125,15 @@ class SearchResult
     {
         $ids = array_keys($this->documents->all());
         $class = $this->entityClass;
+
         // Eager load the index relations by default.
         if (is_null($with)) {
             $with = (new $class)->getIndexRelations();
         }
+
         // Load the Eloquent models from the DB.
         $collection = $class::with($with)->find($ids);
+
         // The database query returns the items in a random order which means
         // a previously specified sort order in the document search will be lost.
         // So we need to manually bring the result in the desired order.
@@ -123,17 +141,22 @@ class SearchResult
         $sorted = [];
         foreach ($ids as $id) {
             $model = $dictionary[$id];
+
             // Fill the model with index metadata.
             if (isset($this->metadata[$id]['_score'])) {
                 $model->setIndexScore($this->metadata[$id]['_score']);
             }
+
             if (isset($this->metadata[$id]['_version'])) {
                 $model->setIndexVersion($this->metadata[$id]['_version']);
             }
+
             $sorted[$id] = $model;
         }
+
         return new Collection($sorted);
     }
+
     /**
      * Total number of hits.
      *
@@ -143,6 +166,7 @@ class SearchResult
     {
         return Arr::get($this->data, 'hits.total');
     }
+
     /**
      * Get the max score of the search result.
      *
@@ -152,6 +176,7 @@ class SearchResult
     {
         return Arr::get($this->data, 'hits.max_score');
     }
+
     /**
      * Get shard info for the search result containing the number of failed shards.
      *
@@ -161,6 +186,7 @@ class SearchResult
     {
         return $this->data['_shards'];
     }
+
     /**
      * The execution time the query for the result took in ms.
      *
@@ -170,6 +196,7 @@ class SearchResult
     {
         return $this->data['took'];
     }
+
     /**
      * Returns true if the query for the results timed out.
      *
@@ -179,6 +206,7 @@ class SearchResult
     {
         return (bool) $this->data['timed_out'];
     }
+
     /**
      * Get the scroll ID of a scroll based search.
      *
@@ -188,6 +216,7 @@ class SearchResult
     {
         return Arr::get($this->data, '_scroll_id');
     }
+
     /**
      * Get the aggregations of the search result.
      *
@@ -197,6 +226,7 @@ class SearchResult
     {
         return isset($this->data['aggregations']) ? $this->data['aggregations'] : [];
     }
+
     /**
      * Returns the metadata dictionary for the documents.
      *
@@ -206,6 +236,7 @@ class SearchResult
     {
         return $this->metadata;
     }
+
     /**
      * Get the highlighted fields of a document in the search result.
      *
@@ -216,6 +247,7 @@ class SearchResult
     {
         return Arr::get($this->getMetadata(), "{$id}.highlight");
     }
+
     /**
      * Get the documents returned by the search.
      *
@@ -225,6 +257,7 @@ class SearchResult
     {
         return $this->documents;
     }
+
     /**
      * Get the documents returned by the search filled with highlighted fields.
      *
@@ -233,6 +266,7 @@ class SearchResult
     public function getHighlightedDocuments()
     {
         $highlightedDocuments = [];
+
         // Merge the highlighted fields into the source documents.
         foreach ($this->getDocuments() as $key => $document) {
             $highlighted = $this->getHighlight($key) ?: [];
@@ -242,10 +276,13 @@ class SearchResult
                     $highlighted[$field] = implode('', $highlights);
                 }
             }
+
             $highlightedDocuments[$key] = array_merge($document, $highlighted);
         }
+
         return $highlightedDocuments;
     }
+
     /**
      * Gets the collection of models for which the documents were returned by the search.
      *
@@ -259,12 +296,15 @@ class SearchResult
         if (! is_a($this->entityClass, \Illuminate\Database\Eloquent\Model::class, true)) {
             throw new \RuntimeException("Entity class {$this->entityClass} is not an Eloquent model.");
         }
+
         // Lazy loading of the models.
         if (is_null($this->items)) {
             $this->items = $this->loadItems($with);
         }
+
         return $this->items;
     }
+
     /**
      * Return the suggestions of the query result if available.
      *
@@ -274,6 +314,7 @@ class SearchResult
     {
         return $this->suggestResult;
     }
+
     /**
      * Get an iterator for the items.
      *
@@ -283,6 +324,7 @@ class SearchResult
     {
         return $this->documents->getIterator();
     }
+
     /**
      * Count the number of items in the search result.
      *
@@ -292,6 +334,7 @@ class SearchResult
     {
         return $this->documents->count();
     }
+
     /**
      * Get the array representation of the search result.
      *

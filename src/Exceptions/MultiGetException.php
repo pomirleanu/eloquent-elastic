@@ -1,23 +1,15 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 1:17 PM
- */
 
 namespace EloquentElastic\Exceptions;
 
 class MultiGetException extends \Exception
 {
-
     /**
      * Dictionary of failed model items.
      *
      * @var array
      */
-    protected $failedItems = [ ];
-
+    protected $failedItems = [];
 
     /**
      * Public accessor to the dictionary of failed items.
@@ -29,13 +21,11 @@ class MultiGetException extends \Exception
         return $this->failedItems;
     }
 
-
     /**
      * Create a new instance for the result failures.
      *
      * @param  array $items
      * @param  array $errors
-     *
      * @return static
      */
     public static function createForFailedItems(array $items, array $errors)
@@ -44,7 +34,9 @@ class MultiGetException extends \Exception
         foreach ($errors as $id => $error) {
             $message .= "Multi GET failed for ID {$id}: {$error['reason']}\n";
         }
-        $instance              = new static($message);
+
+        $instance = new static($message);
+
         $instance->failedItems = $items;
 
         return $instance;

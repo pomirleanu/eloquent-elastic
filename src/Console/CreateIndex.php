@@ -1,22 +1,15 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: pomir
- * Date: 8/25/2016
- * Time: 2:17 PM
- */
 
 namespace EloquentElastic\Console;
 
-use EloquentElastic\Manager as IndexManager;
-use EloquentElastic\Contracts\Model as ModelContract;
 use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Support\Str;
+use EloquentElastic\IndexManager;
+use EloquentElastic\Contracts\IndexedModel as IndexedModelContract;
 
 class CreateIndex extends Command
 {
-
     use ConfirmableTrait;
 
     /**
@@ -42,22 +35,22 @@ class CreateIndex extends Command
     /**
      * Index manager instance used for all index operations.
      *
-     * @var \EloquentElastic\Manager
+     * @var \EloquentElastic\IndexManager
      */
     protected $indexManager;
-
 
     /**
      * Create a new command instance.
      *
-     * @param  \EloquentElastic\Manager $indexManager
+     * @param  \EloquentElastic\IndexManager $indexManager
+     * @return void
      */
     public function __construct(IndexManager $indexManager)
     {
         parent::__construct();
+
         $this->indexManager = $indexManager;
     }
-
 
     /**
      * Execute the console command.
@@ -67,9 +60,10 @@ class CreateIndex extends Command
     public function handle()
     {
         $indexName = $this->option('index') ?: $this->indexManager->getDefaultIndex();
-        $reset     = $this->option('reset') ?: false;
+        $reset = $this->option('reset') ?: false;
+
         // Check if the specified index already exists.
-        if ($this->indexManager->indicesExist([ $indexName ])) {
+        if ($this->indexManager->indicesExist([$indexName])) {
             if ($reset && $this->confirmToProceed()) {
                 $this->resetIndex($indexName);
             } else {
@@ -78,84 +72,90 @@ class CreateIndex extends Command
                 return 1;
             }
         }
+
         // Build the settings array.
-        $settings = [ ];
-        $shards   = $this->option('shards');
-        if ( ! is_null($shards)) {
+        $settings = [];
+        $shards = $this->option('shards');
+        if (! is_null($shards)) {
             $settings['number_of_shards'] = $shards;
         }
+
         $replicas = $this->option('replicas');
-        if ( ! is_null($replicas)) {
+        if (! is_null($replicas)) {
             $settings['number_of_replicas'] = $replicas;
         }
-        $models = [ ];
+
+        $models = [];
         if ($this->option('models')) {
             $models = explode(',', trim($this->option('models')));
-            if (( $models = $this->parseModelsOption($models) ) === false) {
+
+            if (($models = $this->parseModelsOption($models)) === false) {
                 return 1;
             }
         }
+
         $this->createIndex($indexName, $settings, $models);
+
         $this->info("Index '{$indexName}' successfully created.");
     }
-
 
     /**
      * Checks if the specified models are valid indexed model classes and builds
      * an array of fully qualified class names.
      *
      * @param  array $models
-     *
      * @return bool|array
      */
     protected function parseModelsOption(array $models)
     {
-        $parsed = [ ];
+        $parsed = [];
+
         foreach ($models as $model) {
             $class = $this->parseModelName(trim($model));
-            if ( ! class_exists($class)) {
+
+            if (! class_exists($class)) {
                 $this->error("Model class '{$class}' does not exist!");
 
                 return false;
             }
-            if ( ! ( ( new $class ) instanceof ModelContract )) {
-                $this->error("Model class '{$class}' does not implement the '" . ModelContract::class . "' interface!");
+
+            if (! ((new $class) instanceof IndexedModelContract)) {
+                $this->error("Model class '{$class}' does not implement the '".IndexedModelContract::class."' interface!");
 
                 return false;
             }
+
             $parsed[] = $class;
         }
 
         return $parsed;
     }
 
-
     /**
      * Parse the model name and format according to the root namespace.
      *
-     * @param  string $name
-     *
+     * @param  string  $name
      * @return string
      */
     protected function parseModelName($name)
     {
         $rootNamespace = $this->laravel->getNamespace();
+
         if (Str::startsWith($name, $rootNamespace)) {
             return $name;
         }
+
         if (Str::contains($name, '/')) {
             $name = str_replace('/', '\\', $name);
         }
 
-        return $this->parseModelName(trim($rootNamespace, '\\') . '\\' . $name);
+        return $this->parseModelName(trim($rootNamespace, '\\').'\\'.$name);
     }
-
 
     /**
      * Reset (delete) an existing index.
      *
      * @param  string $indexName
-     *
      * @return void
      */
     protected function resetIndex($indexName)
@@ -163,41 +163,39 @@ class CreateIndex extends Command
         $this->indexManager->deleteIndex($indexName);
     }
 
-
     /**
      * Create a new index.
      *
      * @param  string $indexName
-     * @param  array  $settings
-     * @param  array  $models
-     *
+     * @param  array $settings
+     * @param  array $models
      * @return void
      */
-    protected function createIndex($indexName, $settings, array $models = [ ])
+    protected function createIndex($indexName, $settings, array $models = [])
     {
         $mappings = null;
-        if ( ! empty( $models )) {
+        if (! empty($models)) {
             $mappings = $this->getPropertyMappings($models);
         }
+
         $this->indexManager->createIndex($indexName, $settings, $mappings);
     }
-
 
     /**
      * Get the property mappings for the models.
      *
      * @param  array $models
-     *
      * @return array
      */
-    protected function getPropertyMappings(array $models = [ ])
+    protected function getPropertyMappings(array $models = [])
     {
-        $mappings = [ ];
+        $mappings = [];
+
         // Add the default property mappings for the model classes.
         foreach ($models as $class) {
-            $model                                = new $class;
+            $model = new $class;
             $mappings[$model->getIndexTypeName()] = [
-                '_source'    => [ 'enabled' => true ],
+                '_source' => ['enabled' => true],
                 'properties' => $model->getIndexMappingProperties()
             ];
         }
