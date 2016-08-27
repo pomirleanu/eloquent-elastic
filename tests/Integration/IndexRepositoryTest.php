@@ -2,8 +2,8 @@
 
 namespace Integration;
 
-use Elodex\IndexManager;
-use Elodex\IndexRepository;
+use EloquentElastic\IndexManager;
+use EloquentElastic\IndexRepository;
 use Integration\IndexedModel;
 use Illuminate\Support\Collection;
 

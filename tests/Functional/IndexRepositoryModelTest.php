@@ -2,8 +2,8 @@
 
 namespace Functional;
 
-use Elodex\IndexRepository;
-use Elodex\Contracts\IndexedModel;
+use EloquentElastic\IndexRepository;
+use EloquentElastic\Contracts\IndexedModel;
 use Mockery as m;
 
 /**

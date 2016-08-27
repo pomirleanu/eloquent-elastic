@@ -2,9 +2,9 @@
 
 namespace Integration;
 
-use Elodex\IndexManager;
-use Elodex\IndexRepository;
-use Elodex\Exceptions\BulkOperationException;
+use EloquentElastic\IndexManager;
+use EloquentElastic\IndexRepository;
+use EloquentElastic\Exceptions\BulkOperationException;
 use Illuminate\Support\Collection;
 use Integration\IndexedModel;
 

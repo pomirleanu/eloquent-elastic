@@ -2,7 +2,7 @@
 
 namespace Functional;
 
-use Elodex\Model as ElodexModel;
+use EloquentElastic\Model as ElodexModel;
 use Mockery as m;
 
 abstract class MappingModel extends ElodexModel

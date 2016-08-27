@@ -2,7 +2,7 @@
 
 namespace Integration;
 
-use Elodex\Contracts\IndexedModel as IndexedModelContract;
+use EloquentElastic\Contracts\IndexedModel as IndexedModelContract;
 
 class IndexedModel implements IndexedModelContract
 {

@@ -2,7 +2,7 @@
 
 namespace Functional;
 
-use Elodex\Exceptions\BulkOperationException;
+use EloquentElastic\Exceptions\BulkOperationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Arr;
 use Mockery as m;
