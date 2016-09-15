@@ -73,4 +73,22 @@ class Collection extends BaseCollection
 
         return $this;
     }
+
+
+    /**
+     * Add or replace a collection of model entity index documents.
+     *
+     * @param  collection $collection
+     * @return $this
+     */
+    public function saveBulkIndex(&$collection)
+    {
+        if ($this->isEmpty()) {
+            return $this;
+        }
+
+        $result = $this->first()->getIndexRepository()->saveCollection($this);
+
+        return $this;
+    }
 }

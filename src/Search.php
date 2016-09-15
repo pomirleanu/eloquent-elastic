@@ -15,6 +15,7 @@ use ONGR\ElasticsearchDSL\Query\MultiMatchQuery;
 use ONGR\ElasticsearchDSL\Query\RegexpQuery;
 use ONGR\ElasticsearchDSL\Query\WildcardQuery;
 use ONGR\ElasticsearchDSL\Query\FuzzyQuery;
+use ONGR\ElasticsearchDSL\Query\ExistsQuery;
 use ONGR\ElasticsearchDSL\Query\QueryStringQuery;
 use ONGR\ElasticsearchDSL\Query\NestedQuery;
 use ONGR\ElasticsearchDSL\Query\RangeQuery;
@@ -94,7 +95,7 @@ class Search
      */
     public function setModel(EloquentModel $model)
     {
-        if ( ! method_exists($model, 'getIndexRepository')) {
+        if (!method_exists($model, 'getIndexRepository')) {
             throw new InvalidArgumentException('Invalid model for index search');
         }
 
@@ -132,11 +133,11 @@ class Search
      * @param  string $field
      * @param  string $value
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function term($field, $value, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function term($field, $value, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $termQuery = new TermQuery($field, $value, $parameters);
 
@@ -150,13 +151,13 @@ class Search
      * Add a terms query to the search.
      *
      * @param  string $field
-     * @param  array  $terms
+     * @param  array $terms
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function terms($field, $terms, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function terms($field, $terms, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $termsQuery = new TermsQuery($field, $terms, $parameters);
 
@@ -172,11 +173,11 @@ class Search
      * @param  string $field
      * @param  string $query
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function commonTerms($field, $query, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function commonTerms($field, $query, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $commonTermsQuery = new CommonTermsQuery($field, $query, $parameters);
 
@@ -192,11 +193,11 @@ class Search
      * @param  string $field
      * @param  string $value
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function prefix($field, $value, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function prefix($field, $value, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $prefix = new PrefixQuery($field, $value, $parameters);
 
@@ -212,15 +213,30 @@ class Search
      * @param  string $field
      * @param  string $query
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function match($field, $query, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function match($field, $query, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $matchQuery = new MatchQuery($field, $query, $parameters);
 
         $this->addQuery($matchQuery, $boolType);
+
+        return $this;
+    }
+
+    /**
+     * Add exists query to the search.
+     *
+     * @param $field
+     * @return $this
+     */
+    public function exists($field)
+    {
+        $existsQuery = new ExistsQuery($field);
+
+        $this->addQuery($existsQuery);
 
         return $this;
     }
@@ -238,7 +254,7 @@ class Search
      */
     public function range($field, $type, $value, $boolType = BoolQuery::MUST)
     {
-        $rangeQuery = new RangeQuery($field, [ $type => $value ]);
+        $rangeQuery = new RangeQuery($field, [$type => $value]);
 
         $this->addQuery($rangeQuery, $boolType);
 
@@ -251,11 +267,11 @@ class Search
      * Add a match all query to the search.
      *
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function matchAll($boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function matchAll($boolType = BoolQuery::MUST, array $parameters = [])
     {
         $matchAllQuery = new MatchAllQuery($parameters);
 
@@ -268,14 +284,14 @@ class Search
     /**
      * Add a multi match query to the search.
      *
-     * @param  array  $fields
+     * @param  array $fields
      * @param  string $query
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function multiMatch(array $fields, $query, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function multiMatch(array $fields, $query, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $multiMatchQuery = new MultiMatchQuery($fields, $query, $parameters);
 
@@ -291,11 +307,11 @@ class Search
      * @param  string $field
      * @param  string $regexpValue
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function regexp($field, $regexpValue, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function regexp($field, $regexpValue, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $regexpQuery = new RegexpQuery($field, $regexpValue, $parameters);
 
@@ -311,11 +327,11 @@ class Search
      * @param  string $field
      * @param  string $value
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function wildcard($field, $value, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function wildcard($field, $value, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $wildcardQuery = WildcardQuery($field, $value, $parameters);
 
@@ -331,11 +347,11 @@ class Search
      * @param  string $field
      * @param  string $value
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function fuzzy($field, $value, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function fuzzy($field, $value, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $fuzzyQuery = new FuzzyQuery($field, $value, $parameters);
 
@@ -350,11 +366,11 @@ class Search
      *
      * @param  string $query
      * @param  string $boolType
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function queryString($query, $boolType = BoolQuery::MUST, array $parameters = [ ])
+    public function queryString($query, $boolType = BoolQuery::MUST, array $parameters = [])
     {
         $queryStringQuery = new QueryStringQuery($query, $parameters);
 
@@ -367,14 +383,14 @@ class Search
     /**
      * Add a nested query to the search.
      *
-     * @param  string                                  $path
+     * @param  string $path
      * @param  \ONGR\ElasticsearchDSL\BuilderInterface $query
-     * @param  string                                  $boolType
-     * @param  array                                   $parameters
+     * @param  string $boolType
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function nestedQuery($path, BuilderInterface $query, $boolType = BoolQuery::MUST, $parameters = [ ])
+    public function nestedQuery($path, BuilderInterface $query, $boolType = BoolQuery::MUST, $parameters = [])
     {
         $nestedQuery = new NestedQuery($path, $query, $parameters);
 
@@ -436,7 +452,7 @@ class Search
      *
      * @return $this
      */
-    public function sort($field, $order = null, $params = [ ])
+    public function sort($field, $order = null, $params = [])
     {
         $sort = new FieldSort($field, $order, $params);
 
@@ -455,7 +471,7 @@ class Search
      *
      * @return $this
      */
-    public function orderBy($field, $order = null, $params = [ ])
+    public function orderBy($field, $order = null, $params = [])
     {
         return $this->sort($field, $order, $params);
     }
@@ -465,11 +481,11 @@ class Search
      * Add a highlighted field to the search.
      *
      * @param  string $field
-     * @param  array  $params
+     * @param  array $params
      *
      * @return $this
      */
-    public function highlight($field, array $params = [ ])
+    public function highlight($field, array $params = [])
     {
         $highlight = $this->getHighlight();
 
@@ -514,11 +530,11 @@ class Search
      *
      * @param  string $name
      * @param  string $text
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return $this
      */
-    public function suggestTerm($name, $text, array $parameters = [ ])
+    public function suggestTerm($name, $text, array $parameters = [])
     {
         $suggest = new TermSuggest($name, $text, $parameters);
 
@@ -532,7 +548,7 @@ class Search
      * Paginate the search.
      *
      * @param  int|null $perPage
-     * @param  string   $pageName
+     * @param  string $pageName
      * @param  int|null $page
      *
      * @return $this
@@ -540,15 +556,18 @@ class Search
     public function paginate($perPage = null, $pageName = 'page', $page = null)
     {
         $perPage = $perPage ?: $this->getModel()->getPerPage();
-        $page    = $page ?: (int) Paginator::resolveCurrentPage($pageName);
+        $page = $page ?: (int)Paginator::resolveCurrentPage($pageName);
 
-        $this->search->setFrom($perPage * $page);
+        if ($page !== 1) {
+            $this->search->setFrom($perPage * $page);
+
+        }
         $this->search->setSize($perPage);
 
         $results = $this->get();
 
         return new LengthAwarePaginator($results, $perPage, $page, [
-            'path'     => Paginator::resolveCurrentPath(),
+            'path' => Paginator::resolveCurrentPath(),
             'pageName' => $pageName,
         ]);
     }
@@ -557,7 +576,7 @@ class Search
     /**
      * Make a scrolling request for the search expecting a large number of results.
      *
-     * @param  string   $duration
+     * @param  string $duration
      * @param  callable $callback
      *
      * @return void
@@ -585,7 +604,7 @@ class Search
      * Handle dynamic method calls into the search.
      *
      * @param  string $method
-     * @param  array  $parameters
+     * @param  array $parameters
      *
      * @return mixed
      * @throws \BadMethodCallException
@@ -601,16 +620,16 @@ class Search
 
         // Explicit passthroughs to the search query instance.
         if (in_array($method, $this->passthrough)) {
-            return call_user_func_array([ $this->search, $method ], $parameters);
+            return call_user_func_array([$this->search, $method], $parameters);
         }
 
         // Getters should return their result instead of $this.
         if (Str::startsWith($method, 'get')) {
-            return call_user_func_array([ $this->search, $method ], $parameters);
+            return call_user_func_array([$this->search, $method], $parameters);
         }
 
         // Proxied call to the underlying search instance.
-        call_user_func_array([ $this->search, $method ], $parameters);
+        call_user_func_array([$this->search, $method], $parameters);
 
         return $this;
     }

@@ -51,7 +51,7 @@ class LengthAwarePaginator extends BasePaginator
      */
     public function getModels(array $with = null)
     {
-        return $this->searchResults->getModels($with);
+        return $this->getSearchResult()->getModels($with);
     }
 
     /**
