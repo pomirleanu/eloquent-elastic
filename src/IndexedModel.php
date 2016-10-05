@@ -32,6 +32,7 @@ trait IndexedModel
      */
     protected $indexScore;
 
+
     /**
      * {@inheritdoc}
      */
@@ -53,7 +54,15 @@ trait IndexedModel
      */
     public function getIndexRelations()
     {
-        return $this->indexRelations;
+        return isset($this->indexRelations)?$this->indexRelations: null;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getElasticCachePrefix()
+    {
+        return $this->elastic_cache_prefix;
     }
 
     /**

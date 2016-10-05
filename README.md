@@ -22,6 +22,7 @@ Your Eloquent database will remain your main data source while you can use the f
   * [Extending your Eloquent Model Classes](#extending-your-eloquent-model-classes)
 - [Index Repositories](#index-repositories)
 - [Elasticsearch Client](#elasticsearch-client)
+- [Caching](#caching)
 - [Documentation](#documentation)
 - [Changelog](#changelog)
 - [License](#license)
@@ -152,6 +153,19 @@ $client = app('elodex.client');
 ```
 You may also use dependency injection with the `ElasticsearchClientManager` class to get a client instance.
 
+## Caching
+ Can be enabled from the config file as needed.
+ Only when using:
+ ```php
+  ->getModels()
+  ```
+
+  Caching the eloquent query from the mysql, will serve the desired info from cache.
+ 
+ You have to create sync for the modules need caching and set a caching key prefix in the model you need, won't cache if this is not being set:
+ ```php
+     protected $elastic_cache_prefix = 'cache_prefix_';
+ ```
 
 ## Documentation
 A detailed Elodex documentation can be [found here][Elodex Documentation].

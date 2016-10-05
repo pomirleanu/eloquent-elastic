@@ -5,6 +5,7 @@ namespace App\Listeners;
 use EloquentElastic\IndexRepositoryManager;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Cache;
 use {FQModelClass} as Model;
 
 class {Listener} implements ShouldQueue
@@ -47,6 +48,7 @@ class {Listener} implements ShouldQueue
      */
     public function onSaved(Model $model)
     {
+		$this->cacheClear($model);
         $this->repository->save($model);
     }
 
@@ -58,6 +60,7 @@ class {Listener} implements ShouldQueue
      */
     public function onDeleted(Model $model)
     {
+		$this->cacheClear($model);
         $this->repository->remove($model);
     }
 
@@ -69,6 +72,7 @@ class {Listener} implements ShouldQueue
      */
     public function onRestored(Model $model)
     {
+    	$this->cacheClear($model);
         $this->repository->save($model);
     }
 
@@ -80,6 +84,18 @@ class {Listener} implements ShouldQueue
     public function failed()
     {
         // TODO: handle failed index synchronizations.
+    }
+
+	/**
+	 * Clears the cache for the resource.
+	 *
+	 * @return void
+	 */
+    private function cacheClear($model)
+    {
+    	if(isset($model->elastic_cache_prefix)){
+			Cache::forgot($model->elastic_cache_prefix.$model->id);
+    	}
     }
 
     /**
