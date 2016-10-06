@@ -323,18 +323,21 @@ class SearchResult implements IteratorAggregate, Countable, Arrayable
         $dictionary = $collection->getDictionary();
         $sorted     = [];
         foreach ($ids as $id) {
-            $model = $dictionary[ $id ];
+            if (isset($dictionary[ $id ])) {
+                $model = $dictionary[ $id ];
 
-            // Fill the model with index metadata.
-            if (isset($this->metadata[ $id ][ '_score' ])) {
-                $model->setIndexScore($this->metadata[ $id ][ '_score' ]);
+                // Fill the model with index metadata.
+                if (isset($this->metadata[ $id ][ '_score' ])) {
+                    $model->setIndexScore($this->metadata[ $id ][ '_score' ]);
+                }
+
+                if (isset($this->metadata[ $id ][ '_version' ])) {
+                    $model->setIndexVersion($this->metadata[ $id ][ '_version' ]);
+                }
+
+                $sorted[ $id ] = $model;
             }
 
-            if (isset($this->metadata[ $id ][ '_version' ])) {
-                $model->setIndexVersion($this->metadata[ $id ][ '_version' ]);
-            }
-
-            $sorted[ $id ] = $model;
         }
 
         return new Collection($sorted);
@@ -351,15 +354,14 @@ class SearchResult implements IteratorAggregate, Countable, Arrayable
      */
     private function cacheTheEloquentQuery($with, $cachedDocuments)
     {
-        $class           = $this->entityClass;
-        $cacheKeyPrefix  = (new $class)->getElasticCachePrefix();
+        $class          = $this->entityClass;
+        $cacheKeyPrefix = (new $class)->getElasticCachePrefix();
+
         $cachedDocuments = array_map(function ($id) use (&$cacheKeyPrefix, $cachedDocuments) {
             $itemCacheKey = $cacheKeyPrefix.$id;
-            if (Cache::has($itemCacheKey)) {
-                return Cache::get($itemCacheKey);
-            } else {
-                return $id;
-            }
+            $design       = Cache::get($itemCacheKey);
+
+            return (is_null($design)) ? $id : $design;
         }, $cachedDocuments);
 
         $collection = $class::with($with)->find(array_filter($cachedDocuments, 'is_int'));
@@ -368,7 +370,7 @@ class SearchResult implements IteratorAggregate, Countable, Arrayable
             if ($this->config[ 'cache' ][ 'time' ] === 'forever') {
                 Cache::forever($itemCacheKey, $item);
             } else {
-                Cache::put($itemCacheKey, $item, $this->config[ 'cache' ][ 'query-time' ]);
+                Cache::put($itemCacheKey, $item, $this->config[ 'cache' ][ 'time' ]);
             }
 
         });
