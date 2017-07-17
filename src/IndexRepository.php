@@ -434,6 +434,9 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         if (isset($array[ 'from' ])) {
             unset($array[ 'from' ]);
         }
+        if (isset($array[ 'size' ])) {
+            unset($array[ 'size' ]);
+        }
         $params[ 'body' ] = $array;
 
         $results = $this->client->count($params);
