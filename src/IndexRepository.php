@@ -12,6 +12,7 @@ use Illuminate\Support\Collection as BaseCollection;
 
 class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrollingContract
 {
+
     /**
      * The client instance used for all requests.
      *
@@ -50,12 +51,14 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
      */
     protected $shouldRefreshShard = false;
 
+
     /**
      * Create a new index repository instance.
      *
-     * @param  mixed $client
+     * @param  mixed  $client
      * @param  string $modelClass
      * @param  string $indexName
+     *
      * @throws \EloquentElastic\Exceptions\InvalidArgumentException
      */
     public function __construct($client, $modelClass, $indexName)
@@ -65,11 +68,12 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
             throw new InvalidArgumentException('Model class does not implement the IndexedModel interface');
         }
 
-        $this->client = $client;
-        $this->modelClass = $modelClass;
-        $this->indexName = $indexName;
+        $this->client        = $client;
+        $this->modelClass    = $modelClass;
+        $this->indexName     = $indexName;
         $this->indexTypeName = $model->getIndexTypeName();
     }
+
 
     /**
      * {@inheritdoc}
@@ -90,15 +94,17 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         $params = $this->getEntityBaseParams($model);
         $this->addGenericWriteParams($params);
 
-        $params['body'] = $model->toIndexDocument();
+        $params[ 'body' ] = $model->toIndexDocument();
 
         return $this->client->create($params);
     }
+
 
     /**
      * Add a collection of model entity index documents.
      *
      * @param  \Illuminate\Support\Collection $collection
+     *
      * @return array
      */
     public function addCollection(BaseCollection $collection)
@@ -113,8 +119,8 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         $this->addGenericWriteParams($params);
 
         foreach ($collection as $item) {
-            $params['body'][] = ['create' => $this->getEntityBulkParams($item)];
-            $params['body'][] = $item->toIndexDocument();
+            $params[ 'body' ][] = ['create' => $this->getEntityBulkParams($item)];
+            $params[ 'body' ][] = $item->toIndexDocument();
         }
 
         $results = $this->client->bulk($params);
@@ -122,6 +128,7 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
 
         return $results;
     }
+
 
     /**
      * {@inheritdoc}
@@ -146,15 +153,17 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         if (empty($doc)) {
             throw new InvalidArgumentException("The document of the model does not contain any changes and thus can't be updated.");
         }
-        $params['body']['doc'] = $doc;
+        $params[ 'body' ][ 'doc' ] = $doc;
 
         return $this->client->update($params);
     }
+
 
     /**
      * Update a collection of model entity index documents.
      *
      * @param  \Illuminate\Support\Collection $collection
+     *
      * @return array
      */
     public function updateCollection(BaseCollection $collection)
@@ -172,8 +181,8 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
             $doc = $item->getChangedIndexDocument();
 
             if (! empty($doc)) {
-                $params['body'][] = ['update' => $this->getEntityBulkParams($item)];
-                $params['body'][] = ['doc' => $doc];
+                $params[ 'body' ][] = ['update' => $this->getEntityBulkParams($item)];
+                $params[ 'body' ][] = ['doc' => $doc];
             }
         }
 
@@ -182,6 +191,7 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
 
         return $results;
     }
+
 
     /**
      * {@inheritdoc}
@@ -202,15 +212,17 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         $params = $this->getEntityBaseParams($model);
         $this->addGenericWriteParams($params);
 
-        $params['body'] = $model->toIndexDocument();
+        $params[ 'body' ] = $model->toIndexDocument();
 
         return $this->client->index($params);
     }
+
 
     /**
      * Add or replace a collection of model entity index documents.
      *
      * @param  \Illuminate\Support\Collection $collection
+     *
      * @return array
      */
     public function saveCollection(BaseCollection $collection)
@@ -225,8 +237,8 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         $this->addGenericWriteParams($params);
 
         foreach ($collection->all() as $item) {
-            $params['body'][] = ['index' => $this->getEntityBulkParams($item)];
-            $params['body'][] = $item->toIndexDocument();
+            $params[ 'body' ][] = ['index' => $this->getEntityBulkParams($item)];
+            $params[ 'body' ][] = $item->toIndexDocument();
         }
 
         $results = $this->client->bulk($params);
@@ -234,6 +246,7 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
 
         return $results;
     }
+
 
     /**
      * {@inheritdoc}
@@ -252,10 +265,12 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         return $this->client->delete($params);
     }
 
+
     /**
      * Remove all documents for the specified collection of model entities.
      *
      * @param  \Illuminate\Support\Collection $collection
+     *
      * @return array
      */
     public function removeCollection(BaseCollection $collection)
@@ -272,7 +287,7 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         $this->addGenericWriteParams($params);
 
         foreach ($all as $item) {
-            $params['body'][] = [
+            $params[ 'body' ][] = [
                 'delete' => $this->getEntityBulkParams($item),
             ];
         }
@@ -286,10 +301,12 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         return $results;
     }
 
+
     /**
      * Get the indexed document for the specified entity.
      *
      * @param  \EloquentElastic\Contracts\IndexedModel|\Illuminate\Support\Collection $model
+     *
      * @return array
      */
     public function getDocumentForModel($model, $fields = null)
@@ -299,16 +316,18 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         $params = $this->getEntityBaseParams($model);
 
         if (! is_null($fields)) {
-            $params['_source'] = $fields;
+            $params[ '_source' ] = $fields;
         }
 
         return $this->client->get($params);
     }
 
+
     /**
      * Get the documents for the specified collection.
      *
      * @param  \Illuminate\Support\Collection $collection
+     *
      * @return array
      */
     public function getDocumentsForModels(BaseCollection $collection, $fields = null)
@@ -326,28 +345,27 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
             return $m->getIndexKey();
         }, $all);
 
-        $params = $this->getBaseParams();
-        $params['body']['ids'] = $modelIds;
+        $params                    = $this->getBaseParams();
+        $params[ 'body' ][ 'ids' ] = $modelIds;
 
         if (! is_null($fields)) {
-            $params['_source'] = $fields;
+            $params[ '_source' ] = $fields;
         }
 
         $results = $this->client->mget($params);
 
         $this->checkMultiGetResults($results, $collection);
 
-        return $results['docs'];
+        return $results[ 'docs' ];
     }
+
 
     /**
      * {@inheritdoc}
      */
     public function all($limit = null)
     {
-        $search = (new Search())
-            ->matchAll()
-            ->sort('_doc');
+        $search = (new Search())->matchAll()->sort('_doc');
 
         if (! is_null($limit)) {
             $search->setSize($limit);
@@ -356,14 +374,16 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         return $this->search($search);
     }
 
+
     /**
      * Search all fields of all indexed models for the specified term.
      *
-     * @param  string $term
+     * @param  string     $term
      * @param  array|null $aggregations
      * @param  array|null $sourceFields
      * @param  int|null   $limit
      * @param  int|null   $offset
+     *
      * @return \EloquentElastic\SearchResult
      */
     public function searchAllFields($term, $limit = null, $offset = null)
@@ -377,6 +397,7 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         return $this->search($search);
     }
 
+
     /**
      * {@inheritdoc}
      */
@@ -387,16 +408,17 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         $params = array_merge($params, $this->getBaseParams());
 
         // Version info should be included in the result by default.
-        $params['version'] = true;
+        $params[ 'version' ] = true;
 
         // Generate the body out of the search query.
-        $params['body'] = $search->toArray();
+        $params[ 'body' ] = $search->toArray();
 
         // Perform the search request.
         $results = $this->client->search($params);
 
         return new SearchResult($results, $this->modelClass);
     }
+
 
     /**
      * {@inheritdoc}
@@ -405,16 +427,20 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
     {
         $params = $search->getQueryParams();
         $params = array_merge($params, $this->getBaseParams());
-        $array = $search->toArray();
-        if (isset($array['sort'])){
-            unset($array['sort']);
+        $array  = $search->toArray();
+        if (isset($array[ 'sort' ])) {
+            unset($array[ 'sort' ]);
         }
-        $params['body'] = $array;
+        if (isset($array[ 'from' ])) {
+            unset($array[ 'from' ]);
+        }
+        $params[ 'body' ] = $array;
 
         $results = $this->client->count($params);
 
-        return $results['count'];
+        return $results[ 'count' ];
     }
+
 
     /**
      * {@inheritdoc}
@@ -429,7 +455,7 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         }
 
         // Get the first result for the scrolling request.
-        $result = $this->search($search);
+        $result   = $this->search($search);
         $scrollId = $result->getScrollId();
 
         try {
@@ -440,7 +466,7 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
             if (count($result) < $result->totalHits()) {
                 // Scroll through the results until we don't get any more hits.
                 while (true) {
-                    $result = $this->scrollRequest($scrollId, $duration);
+                    $result   = $this->scrollRequest($scrollId, $duration);
                     $scrollId = $result->getScrollId();
 
                     // Check if we didn't get any more results.
@@ -451,23 +477,26 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
                     call_user_func($callback, $result);
                 }
             }
-        } finally {
+        }
+        finally {
             $this->clearScroll($scrollId);
         }
     }
+
 
     /**
      * Send a scrolling request for the given scrolling ID.
      *
      * @param  string $scrollId
      * @param  string $duration
+     *
      * @return \EloquentElastic\SearchResult
      */
     protected function scrollRequest($scrollId, $duration)
     {
         $params = [
             'scroll_id' => $scrollId,
-            'scroll' => $duration,
+            'scroll'    => $duration,
         ];
 
         $results = $this->client->scroll($params);
@@ -475,10 +504,12 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         return new SearchResult($results, $this->modelClass);
     }
 
+
     /**
      * Clear the search context of a scrolling search.
      *
      * @param  string $scrollId
+     *
      * @return array
      */
     protected function clearScroll($scrollId)
@@ -490,6 +521,7 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         return $results;
     }
 
+
     /**
      * Returns the value of the shard refresh option.
      *
@@ -500,10 +532,12 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         return $this->shouldRefreshShard;
     }
 
+
     /**
      * Set the value of the shard refresh option.
      *
      * @param  bool $value
+     *
      * @return \EloquentElastic\IndexRepository
      */
     public function setShouldRefreshShard($value)
@@ -513,11 +547,13 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         return $this;
     }
 
+
     /**
      * Validates the model's class and makes sure it's class is compatible with the
      * index repository.
      *
      * @param  mixed $model
+     *
      * @throws \EloquentElastic\Exceptions\InvalidArgumentException
      */
     protected function validateModelClass($model)
@@ -527,26 +563,30 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         }
     }
 
+
     /**
      * Check the results returned by a bulk operation.
      *
-     * @param  array $results
+     * @param  array                          $results
      * @param  \Illuminate\Support\Collection $collection
+     *
      * @return void
      * @throws \EloquentElastic\Exceptions\BulkOperationException
      */
     protected function checkBulkResults(array $results, BaseCollection $collection)
     {
-        if (isset($results['errors']) && ($results['errors'] === true)) {
-            throw BulkOperationException::createForResults($results['items'], $collection->all());
+        if (isset($results[ 'errors' ]) && ($results[ 'errors' ] === true)) {
+            throw BulkOperationException::createForResults($results[ 'items' ], $collection->all());
         }
     }
+
 
     /**
      * Checks the results of a multi GET for errors.
      *
-     * @param  array $results
+     * @param  array                          $results
      * @param  \Illuminate\Support\Collection $collection
+     *
      * @throws \EloquentElastic\Exceptions\MultiGetException
      */
     protected function checkMultiGetResults(array $results, BaseCollection $collection)
@@ -554,21 +594,21 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         $modelDictionary = $collection->keyBy('id')->all();
 
         $failedItems = [];
-        $errors = [];
+        $errors      = [];
 
-        foreach ($results['docs'] as $doc) {
-            $documentId = $doc['_id'];
+        foreach ($results[ 'docs' ] as $doc) {
+            $documentId = $doc[ '_id' ];
 
-            if (isset($doc['error'])) {
-                $failedItems[$documentId] = $modelDictionary[$documentId];
-                $errors[$documentId] = $doc['error'];
+            if (isset($doc[ 'error' ])) {
+                $failedItems[ $documentId ] = $modelDictionary[ $documentId ];
+                $errors[ $documentId ]      = $doc[ 'error' ];
 
                 continue;
             }
 
-            if ($doc['found'] === false) {
-                $failedItems[$documentId] = $modelDictionary[$documentId];
-                $errors[$documentId] = ['reason' => 'document not found'];
+            if ($doc[ 'found' ] === false) {
+                $failedItems[ $documentId ] = $modelDictionary[ $documentId ];
+                $errors[ $documentId ]      = ['reason' => 'document not found'];
             }
         }
 
@@ -577,10 +617,12 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         }
     }
 
+
     /**
      * Perform a raw search with the specified parameters.
      *
      * @param  array $params
+     *
      * @return \EloquentElastic\SearchResult
      */
     protected function rawSearch(array $params)
@@ -592,6 +634,7 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
         return new SearchResult($results, $this->modelClass);
     }
 
+
     /**
      * Get the params used for index queries.
      *
@@ -601,23 +644,26 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
     {
         return [
             'index' => $this->indexName,
-            'type' => $this->indexTypeName,
+            'type'  => $this->indexTypeName,
         ];
     }
+
 
     /**
      * Get the entity base params used for index queries.
      *
      * @param  \EloquentElastic\Contracts\IndexedModel $model
+     *
      * @return array
      */
     protected function getEntityBaseParams(IndexedModelContract $model)
     {
-        $params = $this->getBaseParams();
-        $params['id'] = $model->getIndexKey();
+        $params         = $this->getBaseParams();
+        $params[ 'id' ] = $model->getIndexKey();
 
         return $params;
     }
+
 
     /**
      * Get the entity params used for bulk indexing queries.
@@ -625,27 +671,30 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
      * https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_indexing_documents.html#_bulk_indexing
      *
      * @param  \EloquentElastic\Contracts\IndexedModel $model
+     *
      * @return array
      */
     protected function getEntityBulkParams(IndexedModelContract $model)
     {
         return [
             '_index' => $this->indexName,
-            '_type' => $this->indexTypeName,
-            '_id' => $model->getIndexKey(),
+            '_type'  => $this->indexTypeName,
+            '_id'    => $model->getIndexKey(),
         ];
     }
+
 
     /**
      * Add generic write parameters to the specified params array.
      *
      * @param  array $params
+     *
      * @return array
      */
     protected function addGenericWriteParams(array &$params)
     {
         if ($this->getShouldRefreshShard()) {
-            $params['refresh'] = true;
+            $params[ 'refresh' ] = true;
         }
 
         return $params;
