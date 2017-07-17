@@ -405,8 +405,11 @@ class IndexRepository implements IndexRepositoryContract, IndexRepositoryScrolli
     {
         $params = $search->getQueryParams();
         $params = array_merge($params, $this->getBaseParams());
-
-        $params['body'] = $search->toArray();
+        $array = $search->toArray();
+        if (isset($array['sort'])){
+            unset($array['sort']);
+        }
+        $params['body'] = $array;
 
         $results = $this->client->count($params);
 
